@@ -189,19 +189,38 @@ Bb = Bb[0]
 print(f'Av: {Av} , Ab: {Ab}, Bb: {Bb}, Ad: {Ad}, Bd: {Bd}, Fmin: {Fmin}')
 
 # Test final equation
+'''
+The equation for determining the ball speed by the traveled distance 
+for a given kick strength (discharge time in ms), can be expressed as:
+    v = Av*d + Ab*Ad*(1-exp(-Bd(F-Fmin))) + Bb
+
+We invert this equation as:
+    exp(-Bb(F-min)) = 1 - (v - Av*d - Bb)/(Ab*Ad)
+
+We express 'gamma' as the term:
+    gamma = (v - Av*d - Bb)/(Ab*Ad)
+
+Finally, F can be determined from:
+    F = Fmin - Log(1 - gamma)/Bd
+'''
+
 robot_distances = [1, 2, 3, 4, 5, 6, 7, 8]
-desired_ball_speed = 2.9
+desired_ball_speed = 1.7
+Fmax = 6
 Fs = []
 
 for d in robot_distances:
     v = desired_ball_speed
     gamma = (v - Av*d - Bb) / (Ab*Ad)
+    if gamma>1: gamma=0.999
     F = Fmin - np.log(1-gamma)/Bd
     if F<Fmin: F = Fmin
-    elif F>6: F=6
+    elif F>Fmax:F = Fmax
     Fs.append(F)
-    plt.scatter(d, F)
 
+plt.scatter(robot_distances, Fs)
+plt.xlim(0,9)
+plt.ylim(0,7)
 plt.xlabel('Robot Distance (m)')
 plt.ylabel('Discharge Time (ms)')
 plt.title('Ball Kicks')
