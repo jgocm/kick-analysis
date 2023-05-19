@@ -197,7 +197,8 @@ for d in robot_distances:
     v = desired_ball_speed
     gamma = (v - Av*d - Bb) / (Ab*Ad)
     F = Fmin - np.log(1-gamma)/Bd
-    if F<Fmin : F = Fmin
+    if F<Fmin: F = Fmin
+    elif F>6: F=6
     Fs.append(F)
     plt.scatter(d, F)
 
