@@ -25,13 +25,10 @@ import numpy as np
 def moving_average(data, window_size):
     # Pad the data at the beginning and end with zeros
     padded_data = np.pad(data, (window_size//2, window_size//2), mode='edge')
-    
     # Construct the moving average window
     window = np.ones(window_size) / window_size
-    
     # Apply the moving average filter
     smoothed_data = np.convolve(padded_data, window, mode='valid')
-    
     return smoothed_data
 
 for tracker in trackers:
@@ -55,7 +52,6 @@ plt.title('Ball Kicks')
 plt.legend()
 #plt.show()
 
-# TODO: quebrar o problema em duas partes oara resolver a regressão:
 # 1-baseado na velocidade máxima, qual a trajetória?
 # 2-baseado na força, qual a velocidade máxima?
 from sklearn.linear_model import RANSACRegressor
@@ -205,7 +201,7 @@ Finally, F can be determined from:
 '''
 
 robot_distances = [1, 2, 3, 4, 5, 6, 7, 8]
-desired_ball_speed = 1.7
+desired_ball_speed = 2
 Fmax = 6
 Fs = []
 
@@ -215,7 +211,7 @@ for d in robot_distances:
     if gamma>1: gamma=0.999
     F = Fmin - np.log(1-gamma)/Bd
     if F<Fmin: F = Fmin
-    elif F>Fmax:F = Fmax
+    elif F>Fmax: F = Fmax
     Fs.append(F)
 
 plt.scatter(robot_distances, Fs)
