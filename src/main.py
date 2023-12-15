@@ -14,7 +14,7 @@ for filename in csv_files:
     #print(f'Reading new data: {file_name_without_ext}')
     data = Read.VisionKicksReader(file_path, file_name_without_ext)
     tracker = Track.BallTracker(data)
-    #tracker.plot()
+    tracker.plot()
     trackers.append(tracker)
 
 
@@ -48,15 +48,20 @@ for tracker in trackers:
 
 plt.xlabel('Distance (m)')
 plt.ylabel('Speed (m/s)')
-plt.title('Ball Kicks')
+plt.title('Ball Kicks and Detected Max Speeds')
 plt.legend()
-#plt.show()
+plt.show()
 
 # 1-baseado na velocidade máxima, qual a trajetória?
 # 2-baseado na força, qual a velocidade máxima?
 from sklearn.linear_model import RANSACRegressor
 
 # Estimate ball deacceleration based on the maxium velocity
+'''
+Here, we assume the ball's speed to decrease linearly with the
+distance from the max speed until the end and find the best lines
+that approximate this part of the movement
+'''
 As = []
 Bs = []
 max_speeds = []
@@ -79,13 +84,31 @@ for tracker in trackers[2:]:
 
 plt.xlabel('Distance (m)')
 plt.ylabel('Speed (m/s)')
-plt.title('Ball Kicks')
-#plt.show()
+plt.title('Linear Regression for Each Kick Force')
+plt.show()
 
 
 # Find B from max_speed
+'''
+The lines from the previous step have very similar angular coefficients,
+so we assume this parameter to be constant and try to find a relation
+between the linear coefficients (B) and the ball's max speeds
+'''
+y = np.array(Bs).reshape(-1, 1)
+plt.scatter(max_speeds, y, label='original')
+plt.xlabel('Max Speed (m/s)')
+plt.ylabel('B')
+plt.title('Ball Kicks')
+plt.legend()
+plt.show()
+plt.clf()
 
 # Compute linear regression
+'''
+From the plot, the linear coefficients (B) and the ball's max speeds seem
+to have a linear relation, so we find a linear regression for it and
+compare our results with the original ones
+'''
 model = RANSACRegressor()
 X = np.array(max_speeds).reshape(-1, 1)
 y = np.array(Bs).reshape(-1, 1)
@@ -101,10 +124,14 @@ plt.xlabel('Max Speed (m/s)')
 plt.ylabel('B')
 plt.title('Ball Kicks')
 plt.legend()
-#plt.show()
+plt.show()
 plt.clf()
 
 # Plot results for testing
+'''
+Here, we plot the lines generated from our regression against
+the original data, to check how well they match
+'''
 for tracker in trackers[2:]:
     Vmax = tracker.max_speed
     d = tracker.distances
@@ -116,15 +143,24 @@ for tracker in trackers[2:]:
 
 plt.xlabel('Distance (m)')
 plt.ylabel('Speed (m/s)')
-plt.title('Ball Kicks')
-#plt.show()
+plt.title('Our Regression vs Original')
+plt.show()
 
 # Determining max_speed from the kick strength (discharge time in ms)
-from scipy.optimize import curve_fit
-Fmin = 0.9
-def func(X, A, B):
-    return A * (1 - np.exp(-B * (X-Fmin)))
+'''
+So far, we could find a relation between the ball's maximum speed and
+it's trajectory. Now we will try to find a relation between the maximum
+speed and the kick strength, so that we can merge these formulas and 
+estimate the whole ball's trajectory based on the kick strength and, thus,
+the inverse too, allowing us to choose which strength we want to apply,
+based on the trajectory we want the ball to execute.
+'''
 
+# Analyzing the data
+'''
+First, we analyze the ball's max speed vs the kick strength, 
+which is actually given by the discharge time in milliseconds
+'''
 As = []
 Bs = []
 dists = []
@@ -134,6 +170,37 @@ for tracker in trackers:
     dists.append(tracker.distances[np.argmax(tracker.speeds)])
     kick_strengths.append(tracker.kick_strength)
     max_speeds.append(tracker.max_speed)
+
+X = np.array(kick_strengths)
+plt.scatter(kick_strengths, max_speeds, label='original')
+plt.xlim(0, 7)
+plt.ylim(0, 3.5)
+plt.xlabel('Discharge Time (ms)')
+plt.ylabel('Maximum Speed (m/s)')
+plt.title('Ball Kicks')
+plt.legend()
+plt.show()
+
+# Regression
+'''
+We assume the previous behavior to be exponential, since it
+is directly related to the capacitor's voltage discharge on the
+solenoid. Thus, it should be in the form:
+
+    v = A*(1 - e^(-B*(F-Fmin)))
+
+where v is the ball's speed, F is the kick strength (discharge time),
+and Fmin is a parameter that relates to the minimum kick strength, i.e.,
+the minimum discharge time that makes the ball move.
+
+For finding A and B that best fit our equation and data, we will use
+an optimizer from the scipy library and plot the results against our
+original data
+'''
+from scipy.optimize import curve_fit
+Fmin = 0.9
+def func(X, A, B):
+    return A * (1 - np.exp(-B * (X-Fmin)))
 
 X = np.array(kick_strengths)
 y = np.array(max_speeds)
@@ -150,8 +217,13 @@ plt.xlabel('Discharge Time (ms)')
 plt.ylabel('Maximum Speed (m/s)')
 plt.title('Ball Kicks')
 plt.legend()
-#plt.show()
+plt.show()
    
+# Test complete equation
+'''
+Here, we merge our estimated regressions for ploting the results
+of our complete equation against the original data
+'''
 for tracker in trackers[2:]:
     distances = tracker.distances
     speeds_measured = tracker.speeds
@@ -176,7 +248,7 @@ for tracker in trackers[2:]:
 plt.xlabel('Distance (m)')
 plt.ylabel('Speed (m/s)')
 plt.title('Ball Kicks')
-#plt.show()
+plt.show()
 plt.clf()
 
 # Checking coefficients
