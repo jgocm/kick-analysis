@@ -7,6 +7,10 @@ csvs_dir = os.getcwd() + '/kicksEvents'
 # Get the list of CSV files in the folder and sort them in ascending order
 csv_files = sorted([filename for filename in os.listdir(csvs_dir) if filename.endswith('.csv')])
 
+# Checking if data were cut correctly
+'''
+First, we exclude the data after the kick has ended and plot it to check
+'''
 trackers = []
 for filename in csv_files:
     file_path = os.path.join(csvs_dir, filename)
@@ -19,6 +23,10 @@ for filename in csv_files:
 
 
 # Plot multiple kicks
+'''
+Here, we apply some filtering to the data and plot the kicks
+just for visualizing their behaviors
+'''
 import matplotlib.pyplot as plt
 import numpy as np
 
